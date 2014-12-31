@@ -23,6 +23,12 @@
 
 using namespace std;
 
+/*
+ Thread-safe method of adding data to a double ended queue.
+ @param Data : integer data to add.
+ @param List : double ended queue to add to.
+ @param Mutex : Mutex that controls access to the queue.
+ */
 void SyncAddToList(int& Data, deque<int>& List, pthread_mutex_t& Mutex)
 {
 	// Lock access to the list.
@@ -34,6 +40,11 @@ void SyncAddToList(int& Data, deque<int>& List, pthread_mutex_t& Mutex)
 	pthread_mutex_unlock(&Mutex);
 }
 
+/*
+Thread-safe method to delete the first element from a double ended queue.
+@param List : double ended queue to delete from.
+@param Mutex : Mutex that controls access to the queue.
+*/
 void SyncDelFromList(deque<int>& List, pthread_mutex_t& Mutex)
 {
 	// Lock access to the list.
@@ -46,6 +57,11 @@ void SyncDelFromList(deque<int>& List, pthread_mutex_t& Mutex)
 	pthread_mutex_unlock(&Mutex);
 }
 
+/*
+Thread-safe method to read data from a double ended queue.
+@param List : double ended queue to read from.
+@param Mutex : Mutex that controls access to the queue.
+*/
 void SyncReadFromList(deque<int>& List, pthread_mutex_t& Mutex)
 {
 	// Lock access to the waiting list.

@@ -61,6 +61,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Create the threads.
 	pthread_t PrinterThread;
 	pthread_t CarThreads[MAX_CARS_TO_SPAWN];
+	// Create the Car Data structure array that will contain all the info for each car thread.
 	struct CarData CarDataArray[MAX_CARS_TO_SPAWN];
 
 	int ReturnCode;
@@ -73,20 +74,20 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	// Create Car threads.
-	for (int i = 0; i < MAX_CARS_TO_SPAWN; i++)
+	for (int iCars = 0; iCars < MAX_CARS_TO_SPAWN; iCars++)
 	{
-		CarDataArray[i].ThreadID = i;
-		CarDataArray[i].Location = rand() % 2; // Check if the randomness is correct
-		ReturnCode = pthread_create(&CarThreads[i], NULL, CarThread, (void*)&CarDataArray[i]);
+		CarDataArray[iCars].ThreadID = iCars;
+		CarDataArray[iCars].Location = rand() % 2; // North or South Entrance
+		ReturnCode = pthread_create(&CarThreads[iCars], NULL, CarThread, (void*)&CarDataArray[iCars]);
 		if (ReturnCode)
 		{
 			cout << "Could not create thread.\n" << "Error code:" << ReturnCode << endl;
 			return EXIT_FAILURE;
 		}
 
-		if (i % 2 == 1)
+		if (iCars % 2 == 1)
 		{
-			// sleep after adding two vehicles
+			// Sleep after adding two vehicles.
 			Sleep(TIME_BETWEEN_ARRIVALS_MS);
 		}
 		CarsRemaining--;

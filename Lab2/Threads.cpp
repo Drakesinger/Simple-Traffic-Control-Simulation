@@ -38,7 +38,7 @@ extern pthread_mutex_t AcessCrossingSouthNorth;
 // Extern Global Variables
 extern int CarsRemaining;
 
-// Vectors containing the Car IDs for each car at a specific location.
+// Double-ended queues containing the Car IDs for each car at a specific location.
 deque<int> WaitingNorth;
 deque<int> WaitingSouth;
 deque<int> CrossingNorthSouth;
@@ -58,13 +58,13 @@ void* CarThread(void* arg)
 	if (Location == LOC_NORTH)
 	{
 		SyncAddToList(CarID, WaitingNorth, AcessWaitingNorth);
-		//cout << "Car " << CarID << " is waiting at North Entrance." << endl;
+
 		// Now check if there is room in the tunnel to go through.
 		sem_wait(&SemaphoreNorth);
 
 		SyncDelFromList(WaitingNorth, AcessWaitingNorth);
 
-		// add the car to the North-South traffic lane
+		// Add the car to the North-South traffic lane
 		SyncAddToList(CarID, CrossingNorthSouth, AcessCrossingNorthSouth);
 
 		// Car is crossing.
@@ -79,7 +79,7 @@ void* CarThread(void* arg)
 	else
 	{
 		SyncAddToList(CarID, WaitingSouth, AcessWaitingSouth);
-		//cout << "Car " << CarID << " is waiting at South Entrance." << endl;
+
 		// Now check if there is room in the tunnel to go through.
 		sem_wait(&SemaphoreSouth);
 
@@ -105,6 +105,7 @@ void* CarThread(void* arg)
 	return NULL;
 }
 
+
 void* PrintThread(void* arg)
 {
 	while (true)
@@ -125,15 +126,18 @@ void* PrintThread(void* arg)
 
 		// Sleep so that the user can actually see the data.
 		Sleep(PRINT_EVERY_MS);
-		// Clear the console. MS Specific.
+
+// Clear the console. MS Specific.
 #ifdef _WIN32
 		system("cls");
 #endif // _WIN32
 
+// Linux specific. Redundant code as the application is compiled for Windows platform.
 #ifdef __linux__
 		system("clear");
 #endif // __linux__
 	}
+
 	pthread_exit(NULL);
 	return NULL;
 }

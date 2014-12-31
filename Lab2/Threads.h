@@ -26,5 +26,21 @@ struct CarData
 	int Location;
 };
 
+/*
+ * Car Thread.
+ * Each thread does all the work in order to be find out if there is still room in the Tunnel.
+ * Then verifies if the lane still has room for it and then is inserted in the correct waiting/crossing queue.
+ * If no data needs to be output for the user the code is simplified as there is no need for any queue nor mutexes.
+ * The Pthread semaphores are enough to control access to the tunnel and lanes.
+ *
+ * @param arg : pointer to void data containing the Structure used to contain the Location and ID of the thread.
+ */
 void* CarThread(void* arg);
+
+/*
+ * Print Thread.
+ * This thread will display all traffic control data to the user.
+ * It prints the data every PRINT_EVERY_MS milliseconds (not taking in account console output time) then clears it.
+ * The thread never ends. Must be canceled by the user.
+ */
 void* PrintThread(void* arg);
