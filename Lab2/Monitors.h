@@ -23,7 +23,8 @@ purpose:	Contain declarations and prototypes for the threads.
 #include "Definitions.h"
 
 /*
-Monitor Structure containing mutexes used.
+Monitor Structure containing mutexes and counters used.
+
 @param n_CarsSouth : number of cars on the south lane.
 @param n_CarsNorth : number of cars on the north lane.
 @param mutex_CarsSouth : mutex to lock access to the south lane.
@@ -34,27 +35,28 @@ typedef struct
 {
 	int n_CarsSouth;
 	pthread_mutex_t mutex_CarsSouth;
-	pthread_cond_t cv_free_South;
+	pthread_cond_t cv_FreeSouth;
 
 	int n_CarsNorth;
 	pthread_mutex_t mutex_CarsNorth;
-	pthread_cond_t cv_free_North;
+	pthread_cond_t cv_FreeNorth;
 
 	int n_free_places;
-	pthread_cond_t cv_free_place;
-} MUTEX_FG;
+	pthread_cond_t cv_FreeSpot;
+} MonitorStruct;
 
 typedef struct
 {
 	int ThreadID;
 	int Location;
 
-	MUTEX_FG* Mutex;
+	MonitorStruct* Mutex;
 
 	int time_to_cross;
 } CarData;
 
-MUTEX_FG* mutex_Init(MUTEX_FG *m);
+/* Initialize the Monitor. */
+MonitorStruct* InitializeMonitor(MonitorStruct* Monitor);
 
 /*
 * Car Threads.
@@ -69,11 +71,11 @@ void* CarThreadN(void* arg);
 void* CarThreadS(void* arg);
 
 // CarThread critical sections.
-void ct_CarNorth_entry(MUTEX_FG* m);
-void ct_CarSouth_entry(MUTEX_FG* m);
+void CarThreadNorthEntry(MonitorStruct* Monitor);
+void CarThreadSouthEntry(MonitorStruct* Monitor);
 
-void ct_CarNorth_exit(MUTEX_FG* m);
-void ct_CarSouth_exit(MUTEX_FG* m);
+void CarThreadNorthExit(MonitorStruct* Monitor);
+void CarThreadSouthExit(MonitorStruct* Monitor);
 
 /*
 * Print Thread.

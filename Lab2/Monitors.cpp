@@ -22,20 +22,24 @@ void* CarThreadN(void* arg)
 	// Get the Car Data.
 	CarData* ThreadData = (CarData*)arg;
 	int CarID = ThreadData->ThreadID;
-	int Location = ThreadData->Location;
 
+	// Car is waiting.
 	SyncAddToList(CarID, WaitingNorth, AcessWaitingNorth);
 
-	ct_CarNorth_entry(ThreadData->Mutex);
+	// Try to enter the lane.
+	CarThreadNorthEntry(ThreadData->Mutex);
 
+	// Car entered the lane.
 	SyncDelFromList(WaitingNorth, AcessWaitingNorth);
 
 	// Add the car to the North-South traffic lane
 	SyncAddToList(CarID, CrossingNorthSouth, AcessCrossingNorthSouth);
 
+	// Crossing.
 	Sleep(ThreadData->time_to_cross);
 
-	ct_CarNorth_exit(ThreadData->Mutex);
+	// Reached the exit.
+	CarThreadNorthExit(ThreadData->Mutex);
 
 	// Delete a car from the list.
 	SyncDelFromList(CrossingNorthSouth, AcessCrossingNorthSouth);
@@ -50,20 +54,24 @@ void* CarThreadS(void* arg)
 	// Get the Car Data.
 	CarData* ThreadData = (CarData*)arg;
 	int CarID = ThreadData->ThreadID;
-	int Location = ThreadData->Location;
 
+	// Car is waiting.
 	SyncAddToList(CarID, WaitingSouth, AcessWaitingSouth);
 
-	ct_CarSouth_entry(ThreadData->Mutex);
+	// Try to enter the lane.
+	CarThreadSouthEntry(ThreadData->Mutex);
 
+	// Car entered the lane.
 	SyncDelFromList(WaitingSouth, AcessWaitingSouth);
 
 	// Add the car to the North-South traffic lane
 	SyncAddToList(CarID, CrossingSouthNorth, AcessCrossingSouthNorth);
 
+	// Crossing.
 	Sleep(ThreadData->time_to_cross);
 
-	ct_CarSouth_exit(ThreadData->Mutex);
+	// Reached the exit.
+	CarThreadSouthExit(ThreadData->Mutex);
 
 	// Delete a car from the list.
 	SyncDelFromList(CrossingSouthNorth, AcessCrossingSouthNorth);
@@ -109,90 +117,97 @@ void* PrintThread(void* arg)
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Star Wars A New Hope
-//////////////////////////////////////////////////////////////////////////
-
-MUTEX_FG* mutex_Init(MUTEX_FG *m)
+MonitorStruct* InitializeMonitor(MonitorStruct* Monitor)
 {
-	pthread_mutex_init(&m->mutex_CarsSouth, NULL);
-	pthread_mutex_init(&m->mutex_CarsNorth, NULL);
-	pthread_cond_init(&m->cv_free_place, NULL);
-	pthread_cond_init(&m->cv_free_South, NULL);
-	pthread_cond_init(&m->cv_free_North, NULL);
+	pthread_mutex_init(&Monitor->mutex_CarsSouth, NULL);
+	pthread_mutex_init(&Monitor->mutex_CarsNorth, NULL);
+	pthread_cond_init(&Monitor->cv_FreeSpot, NULL);
+	pthread_cond_init(&Monitor->cv_FreeSouth, NULL);
+	pthread_cond_init(&Monitor->cv_FreeNorth, NULL);
 
-	m->n_CarsSouth = 0;
-	m->n_CarsNorth = 0;
+	// Maximum value is set in Definitions.h.
+	Monitor->n_CarsSouth = 0;
+	Monitor->n_CarsNorth = 0;
 
-	m->n_free_places = MAX_CARS_IN_TUNNEL;
+	// Max value of free room in the Tunnel.
+	Monitor->n_free_places = MAX_CARS_IN_TUNNEL;
 
-	return m;
+	return Monitor;
 }
 
-void ct_CarNorth_entry(MUTEX_FG *m)
+void CarThreadNorthEntry(MonitorStruct* Monitor)
 {
-	pthread_mutex_lock(&m->mutex_CarsNorth);
+	// Lock access to lane counter.
+	pthread_mutex_lock(&Monitor->mutex_CarsNorth);
 
-	while (m->n_free_places <= 0)
-		pthread_cond_wait(&m->cv_free_place, &m->mutex_CarsNorth);
+	// Check if we can enter.
+	while (Monitor->n_free_places <= 0)
+		pthread_cond_wait(&Monitor->cv_FreeSpot, &Monitor->mutex_CarsNorth);
 
-	m->n_CarsNorth++;
+	// Entering the north lane.
+	Monitor->n_CarsNorth++;
 
-	while (m->n_CarsNorth == MAX_CARS_ON_LANE)
-		pthread_cond_wait(&m->cv_free_North, &m->mutex_CarsNorth);
+	// Check if there is still room.
+	while (Monitor->n_CarsNorth == MAX_CARS_ON_LANE)
+		pthread_cond_wait(&Monitor->cv_FreeNorth, &Monitor->mutex_CarsNorth);
 
-	m->n_free_places--;
+	// Entered the lane.
+	Monitor->n_free_places--;
 
-	pthread_mutex_unlock(&m->mutex_CarsNorth);
+	pthread_mutex_unlock(&Monitor->mutex_CarsNorth);
 }
 
-void ct_CarNorth_exit(MUTEX_FG *m)
+void CarThreadNorthExit(MonitorStruct* Monitor)
 {
-	pthread_mutex_lock(&m->mutex_CarsNorth);
+	// Lock access to north lane counter.
+	pthread_mutex_lock(&Monitor->mutex_CarsNorth);
 
-	m->n_CarsNorth--;
-	if (m->n_CarsNorth < MAX_CARS_ON_LANE)
+	Monitor->n_CarsNorth--;
+	if (Monitor->n_CarsNorth < MAX_CARS_ON_LANE)
 	{
-		pthread_cond_broadcast(&m->cv_free_North);
+		// There is room on the lane.
+		pthread_cond_broadcast(&Monitor->cv_FreeNorth);
 	}
 
-	m->n_free_places++;
-	pthread_cond_broadcast(&m->cv_free_place);
-
-	pthread_mutex_unlock(&m->mutex_CarsNorth);
+	// Car is out of the lane.
+	Monitor->n_free_places++;
+	pthread_cond_broadcast(&Monitor->cv_FreeSpot);
+	// Unlock access to the lane counter.
+	pthread_mutex_unlock(&Monitor->mutex_CarsNorth);
 }
 
-void ct_CarSouth_entry(MUTEX_FG *m)
+void CarThreadSouthEntry(MonitorStruct* Monitor)
 {
-	pthread_mutex_lock(&m->mutex_CarsSouth);
+	pthread_mutex_lock(&Monitor->mutex_CarsSouth);
 
-	while (m->n_free_places <= 0)
-		pthread_cond_wait(&m->cv_free_place, &m->mutex_CarsSouth);
+	while (Monitor->n_free_places <= 0)
+		pthread_cond_wait(&Monitor->cv_FreeSpot, &Monitor->mutex_CarsSouth);
 
-	m->n_CarsSouth++;
+	Monitor->n_CarsSouth++;
 
-	while (m->n_CarsSouth == MAX_CARS_ON_LANE)
-		pthread_cond_wait(&m->cv_free_South, &m->mutex_CarsSouth);
+	while (Monitor->n_CarsSouth == MAX_CARS_ON_LANE)
+		pthread_cond_wait(&Monitor->cv_FreeSouth, &Monitor->mutex_CarsSouth);
 
-	m->n_free_places--;
+	Monitor->n_free_places--;
 
-	pthread_mutex_unlock(&m->mutex_CarsSouth);
+	pthread_mutex_unlock(&Monitor->mutex_CarsSouth);
 }
 
-void ct_CarSouth_exit(MUTEX_FG *m)
+void CarThreadSouthExit(MonitorStruct* Monitor)
 {
-	pthread_mutex_lock(&m->mutex_CarsSouth);
+	//pthread_mutex_lock(&m->mutex_Tunnel);
+	pthread_mutex_lock(&Monitor->mutex_CarsSouth);
 
-	m->n_CarsSouth--;
+	Monitor->n_CarsSouth--;
 
-	if (m->n_CarsSouth < MAX_CARS_ON_LANE)
+	if (Monitor->n_CarsSouth < MAX_CARS_ON_LANE)
 	{
 		// Unlock other Cars from the south.
-		pthread_cond_broadcast(&m->cv_free_South);
+		pthread_cond_broadcast(&Monitor->cv_FreeSouth);
 	}
 
-	m->n_free_places++;
-	pthread_cond_broadcast(&m->cv_free_place);
+	Monitor->n_free_places++;
+	pthread_cond_broadcast(&Monitor->cv_FreeSpot);
 
-	pthread_mutex_unlock(&m->mutex_CarsSouth);
+	pthread_mutex_unlock(&Monitor->mutex_CarsSouth);
 }

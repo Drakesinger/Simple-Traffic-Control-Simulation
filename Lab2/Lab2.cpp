@@ -42,9 +42,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Initialize the RNG seed.
 	srand((unsigned)time(NULL));
 
-	// Initialize Monitors
-	MUTEX_FG Monitor;
-	mutex_Init(&Monitor);
+	// Initialize Monitor
+	MonitorStruct Monitor;
+	InitializeMonitor(&Monitor);
 
 	// Initialize Mutexes.
 	pthread_mutex_init(&AcessWaitingNorth, 0);
