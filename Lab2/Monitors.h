@@ -34,9 +34,11 @@ typedef struct
 {
 	int n_CarsSouth;
 	pthread_mutex_t mutex_CarsSouth;
+	pthread_cond_t cv_free_South;
 
 	int n_CarsNorth;
 	pthread_mutex_t mutex_CarsNorth;
+	pthread_cond_t cv_free_North;
 
 	int n_free_places;
 	pthread_cond_t cv_free_place;
