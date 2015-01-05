@@ -8,29 +8,24 @@
 * Written by Horia Mut <horia.mut@net2000.ch>, 2014/12/30
 **********************************************************************************/
 /********************************************************************
-	created:	2014/12/30
-	created:	30:12:2014   14:58
-	filename: 	C:\Development\Projects\ParallelComputing\Lab2\Lab2\Lab2.cpp
-	file path:	C:\Development\Projects\ParallelComputing\Lab2\Lab2
-	file base:	Lab2
-	file ext:	cpp
-	author:		Horia Mut
+created:	2014/12/30
+created:	30:12:2014   14:58
+filename: 	C:\Development\Projects\ParallelComputing\Lab2\Lab2\Lab2.cpp
+file path:	C:\Development\Projects\ParallelComputing\Lab2\Lab2
+file base:	Lab2
+file ext:	cpp
+author:		Horia Mut
 
-	purpose:	Implementation of a basic traffic control simulation
-	*********************************************************************/
+purpose:	Implementation of a basic traffic control simulation
+*********************************************************************/
 // Lab2.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
 #include "Definitions.h"
-#include "Threads.h"
+#include "Monitors.h"
 
 using namespace std;
-
-// Semaphores
-sem_t SemaphoreNorth;
-sem_t SemaphoreSouth;
-sem_t SemaphoreAccess;
 
 // Mutexes to protect deque access.
 pthread_mutex_t AcessWaitingNorth;
@@ -47,10 +42,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Initialize the RNG seed.
 	srand((unsigned)time(NULL));
 
-	// Initialize Semaphores.
-	sem_init(&SemaphoreAccess, 0, MAX_CARS_IN_TUNNEL);
-	sem_init(&SemaphoreNorth, 0, MAX_CARS_ON_LANE);
-	sem_init(&SemaphoreSouth, 0, MAX_CARS_ON_LANE);
+	// Initialize Monitors
+	MUTEX_FG Monitor;
+	mutex_Init(&Monitor);
 
 	// Initialize Mutexes.
 	pthread_mutex_init(&AcessWaitingNorth, 0);
@@ -62,7 +56,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	pthread_t PrinterThread;
 	pthread_t CarThreads[MAX_CARS_TO_SPAWN];
 	// Create the Car Data structure array that will contain all the info for each car thread.
-	struct CarData CarDataArray[MAX_CARS_TO_SPAWN];
+	CarData CarDataArray[MAX_CARS_TO_SPAWN];
 
 	int ReturnCode;
 	// Create print thread.
@@ -76,9 +70,20 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Create Car threads.
 	for (int iCars = 0; iCars < MAX_CARS_TO_SPAWN; iCars++)
 	{
+		int Location = rand() % 2; // North or South Entrance
 		CarDataArray[iCars].ThreadID = iCars;
-		CarDataArray[iCars].Location = rand() % 2; // North or South Entrance
-		ReturnCode = pthread_create(&CarThreads[iCars], NULL, CarThread, (void*)&CarDataArray[iCars]);
+		CarDataArray[iCars].Location = Location;
+		CarDataArray[iCars].Mutex = &Monitor;
+
+		if (Location == LOC_NORTH)
+		{
+			ReturnCode = pthread_create(&CarThreads[iCars], NULL, CarThreadN, (void*)&CarDataArray[iCars]);
+		}
+		else
+		{
+			ReturnCode = pthread_create(&CarThreads[iCars], NULL, CarThreadS, (void*)&CarDataArray[iCars]);
+		}
+
 		if (ReturnCode)
 		{
 			cout << "Could not create thread.\n" << "Error code:" << ReturnCode << endl;

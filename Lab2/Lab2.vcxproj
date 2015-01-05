@@ -149,14 +149,11 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SyncReadAndWrite.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="Threads.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Lab2.cpp" />
-    <ClCompile Include="Lab2Monitors.cpp" />
     <ClCompile Include="Monitors.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="Threads.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

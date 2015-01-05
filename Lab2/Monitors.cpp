@@ -54,7 +54,7 @@ void* CarThreadS(void* arg)
 
 	SyncAddToList(CarID, WaitingSouth, AcessWaitingSouth);
 
-	ct_CarNorth_entry(ThreadData->Mutex);
+	ct_CarSouth_entry(ThreadData->Mutex);
 
 	SyncDelFromList(WaitingSouth, AcessWaitingSouth);
 
@@ -63,7 +63,7 @@ void* CarThreadS(void* arg)
 
 	Sleep(ThreadData->time_to_cross);
 
-	ct_CarNorth_exit(ThreadData->Mutex);
+	ct_CarSouth_exit(ThreadData->Mutex);
 
 	// Delete a car from the list.
 	SyncDelFromList(CrossingSouthNorth, AcessCrossingSouthNorth);
@@ -107,4 +107,103 @@ void* PrintThread(void* arg)
 
 	pthread_exit(NULL);
 	return NULL;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Star Wars A New Hope
+//////////////////////////////////////////////////////////////////////////
+
+MUTEX_FG* mutex_Init(MUTEX_FG *m)
+{
+	pthread_mutex_init(&m->mutex_CarsSouth, NULL);
+	pthread_mutex_init(&m->mutex_CarsNorth, NULL);
+	pthread_cond_init(&m->cv_free_place, NULL);
+
+	m->n_CarsSouth = 0;
+	m->n_CarsNorth = 0;
+
+	m->n_free_places = MAX_CARS_IN_TUNNEL;
+
+	return m;
+}
+
+void ct_CarNorth_entry(MUTEX_FG *m)
+{
+	pthread_mutex_lock(&m->mutex_CarsNorth);	// bloque les autres voitures venant du nord
+
+	while (m->n_free_places <= 0)
+		// attend qu'une cabine soit disponible
+		pthread_cond_wait(&m->cv_free_place, &m->mutex_CarsNorth);
+
+	m->n_CarsNorth++;	// compte le nombre de garcon en train de se doucher
+
+	if (m->n_CarsNorth == MAX_CARS_ON_LANE)
+	{
+		// bloque les autres voitures venant du nord
+		pthread_mutex_lock(&m->mutex_CarsNorth);
+	}
+
+	// une cabine est occuppee par le garcon
+	m->n_free_places--;
+
+	pthread_mutex_unlock(&m->mutex_CarsNorth);
+}
+
+void ct_CarNorth_exit(MUTEX_FG *m)
+{
+	pthread_mutex_lock(&m->mutex_CarsNorth);
+
+	m->n_CarsNorth--;	// compte le nombre de garcons en train de se doucher
+	if (m->n_CarsNorth < MAX_CARS_ON_LANE)
+	{
+		// de-bloque les voitures si il y'a de la place.
+		pthread_mutex_unlock(&m->mutex_CarsNorth);
+	}
+
+	// signale qu'une cabine est disponible
+	m->n_free_places++;
+	pthread_cond_broadcast(&m->cv_free_place);
+
+	pthread_mutex_unlock(&m->mutex_CarsNorth);
+}
+
+void ct_CarSouth_entry(MUTEX_FG *m)
+{
+	pthread_mutex_lock(&m->mutex_CarsSouth);
+
+	while (m->n_free_places <= 0)
+		// attend qu'une cabine soit disponible
+		pthread_cond_wait(&m->cv_free_place, &m->mutex_CarsSouth);
+
+	m->n_CarsSouth++;
+
+	if (m->n_CarsSouth == MAX_CARS_ON_LANE)
+	{
+		// Block other cars from the south
+		pthread_mutex_lock(&m->mutex_CarsSouth);
+	}
+
+	// une cabine est occuppee par la fille
+	m->n_free_places--;
+
+	pthread_mutex_unlock(&m->mutex_CarsSouth);
+}
+
+void ct_CarSouth_exit(MUTEX_FG *m)
+{
+	pthread_mutex_lock(&m->mutex_CarsSouth);
+
+	m->n_CarsSouth--;
+
+	if (m->n_CarsSouth == 0)
+	{
+		// Unlock other Cars from the south.
+		pthread_mutex_unlock(&m->mutex_CarsSouth);
+	}
+
+	// signale qu'une cabine est disponible
+	m->n_free_places++;
+	pthread_cond_broadcast(&m->cv_free_place);
+
+	pthread_mutex_unlock(&m->mutex_CarsSouth);
 }

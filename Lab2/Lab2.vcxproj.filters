@@ -27,9 +27,6 @@
     <ClInclude Include="Definitions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Threads.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SyncReadAndWrite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -42,12 +39,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Lab2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Threads.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Lab2Monitors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Monitors.cpp">
