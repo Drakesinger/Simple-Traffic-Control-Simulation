@@ -20,7 +20,7 @@
 	*********************************************************************/
 #pragma once
 
-#define PRINT_EVERY_MS 20
+#define PRINT_EVERY_MS 40
 
 #define LOC_NORTH 0
 #define LOC_SOUTH 1

@@ -172,7 +172,6 @@ void ct_CarSouth_entry(MUTEX_FG *m)
 	pthread_mutex_lock(&m->mutex_CarsSouth);
 
 	while (m->n_free_places <= 0)
-		// attend qu'une cabine soit disponible
 		pthread_cond_wait(&m->cv_free_place, &m->mutex_CarsSouth);
 
 	m->n_CarsSouth++;
@@ -201,7 +200,6 @@ void ct_CarSouth_exit(MUTEX_FG *m)
 		pthread_mutex_unlock(&m->mutex_CarsSouth);
 	}
 
-	// signale qu'une cabine est disponible
 	m->n_free_places++;
 	pthread_cond_broadcast(&m->cv_free_place);
 

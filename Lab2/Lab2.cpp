@@ -74,6 +74,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		CarDataArray[iCars].ThreadID = iCars;
 		CarDataArray[iCars].Location = Location;
 		CarDataArray[iCars].Mutex = &Monitor;
+		CarDataArray[iCars].time_to_cross = TIME_TO_CROSS_MS;
 
 		if (Location == LOC_NORTH)
 		{
